@@ -1,0 +1,151 @@
+#!/bin/bash
+set -e
+set -x
+# $@
+# $1 copy from image
+# $2 copy to image
+
+# ENVIRONMENT variables
+
+# FROM-USERNAME
+# FROM-PASSWORD
+# to-user
+# from-pass
+
+# USE CASES
+# 1. skopeo copy internal-registry/namespace/foo docker.io/aweiteka/foo
+# 2. skopeo copy open-registry/foo/bar internal-registry/namespace/foo
+
+print_usage() {
+  echo
+  echo "Usage: $(basename $0) <src_repo> <dest_repo>"
+  echo "Examples:"
+  echo
+  echo "    $(basename $0) "
+  echo "    $(basename $0) "
+  echo "    $(basename $0) "
+  echo
+}
+
+if [ "$#" -gt 2 ]
+then
+  print_usage
+  exit 1
+fi
+
+# Let's cd into where the script is.
+# Remember, we have to path everything based off of the script's dir
+cd "$(dirname "$0")"
+
+_src_arg="$1"
+_dest_arg="$2"
+_src_auth=""
+_dest_auth=""
+
+#
+# Check for args with no usernames or passwords
+# Begin by checking for the @ symbol in the arg
+#If has @ then
+#  If no colon ; then args = username + repo
+#  If also has : ; then args = username + password + repo
+#Else
+#  Just a plain url
+parse_args () {
+
+  if [ $(echo "$_src_arg" | grep "\@" > /dev/null 2>&1 ; echo $? ) -eq "1" ]; then
+    export _src_repo="$_src_arg"
+    export _src_auth="0"
+  fi
+  if [ $(echo "$_dest_arg" | grep "\@" > /dev/null 2>&1 ; echo $? ) -eq "1" ]; then
+    export _dest_repo="$_dest_arg"
+    export _dest_auth="0"
+  fi
+  if [ $(echo "$_src_arg" | grep "\@" > /dev/null 2>&1 ; echo $? ) -eq "0" ]; then
+
+    # If no password
+      if [ $(echo "$_src_arg" | grep "\:" > /dev/null 2>&1 ; echo $? ) -eq "1" ]; then
+        export _src_username=$(echo "$_src_arg" | cut -d "@" -f1)
+        export _src_password=""
+        export _src_repo=$(echo "$_src_arg" | cut -d "@" -f2)
+        _src_auth="1"
+      fi
+
+      # If has password
+      # TODO: Figure out a way to sanitize passwords if they have illegal characters
+      if [ $(echo "$_src_arg" | grep "\:" > /dev/null 2>&1 ; echo $? ) -eq "0" ]; then
+        export _src_username=$(echo "$_src_arg" | cut -d "@" -f 1 | cut -d ":" -f 1)
+        export _src_password=":$(echo "$_src_arg" | cut -d "@" -f 1  | cut -d ":" -f 2)"
+        export _src_repo=$(echo "$_src_arg" | cut -d "@" -f2)
+        _src_auth="1"
+      fi
+  #else
+  #    let _src_auth="0"
+  fi
+
+  if [ $(echo "$_dest_arg" | grep "\@" > /dev/null 2>&1 ; echo $? ) -eq "0" ]; then
+
+    # If no password
+      if [ $(echo "$_dest_arg" | grep "\:" > /dev/null 2>&1 ; echo $? ) -eq "1" ]; then
+        export _dest_username=$(echo "$_dest_arg" | cut -d "@" -f1)
+        export _dest_password=""
+        export _dest_repo=$(echo "$_dest_arg" | cut -d "@" -f2)
+       _dest_auth="1"
+      fi
+      # If has passowrd
+      if [ $(echo "$_dest_arg" | grep "\:" > /dev/null 2>&1 ; echo $? ) -eq "0" ]; then
+        export _dest_username=$(echo "$_dest_arg" | cut -d "@" -f 1 | cut -d ":" -f 1)
+        export _dest_password=":$(echo "$_dest_arg" | cut -d "@" -f 1 | cut -d ":" -f 2)"
+        export _dest_repo=$(echo "$_dest_arg" | cut -d "@" -f2)
+        _dest_auth="1"
+      fi
+#  else
+#      let _dest_auth="0"
+  fi
+}
+
+skopeo_command() {
+
+  if [ $_src_auth -eq 0 ] && [ $_dest_auth -eq 0 ]; then
+    export _skopeo_cmd=$(skopeo copy $_src_repo $_dest_repo)
+    echo $_skopeo_cmd
+  fi
+  if [ $_src_auth -eq 1 ] && [ $_dest_auth -eq 0 ]; then
+    _skopeo_cmd=$(skopeo copy "$_src_username$_src_password@$_src_repo" "$_dest_repo")
+    echo $_skopeo_cmd
+  fi
+  if [ $_src_auth -eq 0 ] && [ $_dest_auth -eq 1 ]; then
+    _skopeo_cmd=$(skopeo copy "$_src_repo" "$_dest_username$_dest_password@$_dest_repo")
+    echo $_skopeo_cmd
+  fi
+  if [ $_src_auth -eq 1 ] && [ $_dest_auth -eq 1 ]; then
+    $(skopeo copy --src-creds "$_src_username$_src_password" --dest-creds "$_dest_username$_dest_password" "$_src_repo" "$_dest_repo")
+    echo 'test'
+  fi
+}
+
+parse_args
+skopeo_command
+
+echo "$_src_auth"
+echo "$_src_username"
+echo "$_src_password"
+echo "$_src_repo"
+echo "$_dest_auth"
+echo "$_dest_username"
+echo "$_dest_password"
+echo "$_dest_repo"
+echo "$_skopeo_cmd"
+
+
+#
+#if [ $? != 0 ]; then
+#if [ $? == 0 ]; then
+#
+#
+#    [ $NEXT_MACHINE -eq 1 ] && continue
+#
+#
+#skopeo $DEBUG copy $FROMCREDS
+
+
+# vim: filetype=sh sw=2 ts=2 softtabstop=2 expandtab
