@@ -1,0 +1,44 @@
+FROM centos:centos7
+
+MAINTAINER Chris Murphy <chmurphy@redhat.com>
+
+LABEL com.redhat.component="jenkins-slave-skopeo" \
+      name="jenkins-slave-skopeo" \
+      architecture="x86_64" \
+      vendor="Red Hat"
+      version="0.0"
+      release="1"
+      summary="Jenkins Slave With Skopeo Included"
+      description="Jenkins Slave With Skopeo Image Management Tool"
+### Required labels above - recommended below
+      url=""
+      io.k8s.display-name="Jenkins Slave With Skopeo Included" \
+      io.k8s.description="Jenkins Slave With Skopeo Image Management Tool" \
+      io.openshift.tags="openshift,jenkins,slave,skopeo"
+
+### Setup user's environment
+ENV LANG=en_US.UTF-8 \
+    APP_ROOT=/home \
+    USER_NAME=skopeo \
+    USER_UID=1111
+ENV APP_HOME=${APP_ROOT}/${USER_NAME} \
+    PATH=$PATH:${APP_ROOT}/bin
+RUN mkdir -p ${APP_HOME}
+COPY bin/ ${APP_ROOT}/bin/
+RUN chmod -R ug+x ${APP_ROOT}/bin && sync && \
+    useradd -l -u ${USER_UID} -r -g 0 -d ${APP_ROOT} -s /sbin/nologin -c "${USER_NAME} user" ${USER_NAME} && \
+    chown -R ${USER_UID}:0 ${APP_ROOT} && \
+    chmod -R g=u ${APP_ROOT}
+
+### Install needed packages and update image
+RUN yum-config-manager --enable extras && \
+    INSTALL_PKGS="skopeo" && \
+    yum -y update-minimal --disablerepo "*" --enablerepo core --setopt=tsflags=nodocs \
+      --security --sec-severity=Important --sec-severity=Critical && \
+    yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    yum clean all
+
+USER 1111
+WORKDIR ${APP_ROOT}
+CMD run
