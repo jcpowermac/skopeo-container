@@ -14,7 +14,7 @@ LABEL com.redhat.component="jenkins-slave-skopeo" \
       url=""
       io.k8s.display-name="Jenkins Slave With Skopeo Included" \
       io.k8s.description="Jenkins Slave With Skopeo Image Management Tool" \
-      io.openshift.tags="openshift,jenkins,slave,skopeo"
+      io.openshift.tags="atomic,jenkins,slave,skopeo"
 
 ### Setup user's environment
 ENV LANG=en_US.UTF-8 \
@@ -31,7 +31,7 @@ RUN chmod -R ug+x ${APP_ROOT}/bin && sync && \
     chmod -R g=u ${APP_ROOT}
 
 ### Install needed packages and update image
-RUN yum-config-manager --enable rhel-7-server-extras-rpms && \
+RUN yum-config-manager --enable --enable rhel-7-server-extras-rpms && \
     INSTALL_PKGS="skopeo" && \
     yum -y update-minimal --disablerepo "*" --enablerepo core --setopt=tsflags=nodocs \
       --security --sec-severity=Important --sec-severity=Critical && \
@@ -41,4 +41,4 @@ RUN yum-config-manager --enable rhel-7-server-extras-rpms && \
 
 USER 1111
 WORKDIR ${APP_ROOT}
-ENTRYPOINT ["run"]
+CMD run
