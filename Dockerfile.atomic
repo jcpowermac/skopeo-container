@@ -41,4 +41,5 @@ RUN yum-config-manager --enable --enable rhel-7-server-extras-rpms && \
 
 USER 1111
 WORKDIR ${APP_ROOT}
-CMD run
+ENTRYPOINT ["run"]
+
