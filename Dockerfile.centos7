@@ -5,13 +5,13 @@ MAINTAINER Chris Murphy <chmurphy@redhat.com>
 LABEL com.redhat.component="jenkins-slave-skopeo" \
       name="jenkins-slave-skopeo" \
       architecture="x86_64" \
-      vendor="Red Hat"
-      version="0.0"
-      release="1"
-      summary="Jenkins Slave With Skopeo Included"
-      description="Jenkins Slave With Skopeo Image Management Tool"
+      vendor="Red Hat" \
+      version="0.0" \
+      release="1" \
+      summary="Jenkins Slave With Skopeo Included" \
+      description="Jenkins Slave With Skopeo Image Management Tool" \
 ### Required labels above - recommended below
-      url=""
+      url="" \
       io.k8s.display-name="Jenkins Slave With Skopeo Included" \
       io.k8s.description="Jenkins Slave With Skopeo Image Management Tool" \
       io.openshift.tags="openshift,jenkins,slave,skopeo"
@@ -33,7 +33,7 @@ RUN chmod -R ug+x ${APP_ROOT}/bin && sync && \
 ### Install needed packages and update image
 RUN yum-config-manager --enable extras && \
     INSTALL_PKGS="skopeo" && \
-    yum -y update-minimal --disablerepo "*" --enablerepo core --setopt=tsflags=nodocs \
+    yum -y update-minimal --disablerepo "*" --enablerepo base --setopt=tsflags=nodocs \
       --security --sec-severity=Important --sec-severity=Critical && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
